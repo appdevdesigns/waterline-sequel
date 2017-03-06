@@ -142,6 +142,11 @@ CriteriaProcessor.prototype.expand = function expand(key, val) {
   var self = this;
 
   switch(key.toLowerCase()) {
+
+    case 'and':
+      self.aand(val);
+      return;
+
     case 'or':
       self.or(val);
       return;
@@ -163,6 +168,46 @@ CriteriaProcessor.prototype.expand = function expand(key, val) {
       self.and(key, val);
       return;
   }
+};
+
+
+/**
+ * Handle `AND` Criteria
+ */
+
+CriteriaProcessor.prototype.aand = function aand(val) {
+
+  var self = this;
+
+  if(!_.isArray(val)) {
+    throw new Error('`and` statements must be in an array.');
+  }
+
+  // Wrap the entire AND clause
+  this.queryString += '(';
+
+  _.each(val, function(statement) {
+    self.queryString += '(';
+
+    // Recursively call expand. Assumes no nesting of `or` statements
+    _.each(_.keys(statement), function(key) {
+      self.expand(key, statement[key]);
+    });
+
+    if(self.queryString.slice(-4) === 'AND ') {
+      self.queryString = self.queryString.slice(0, -5);
+    }
+
+    self.queryString += ') AND ';
+  });
+
+  // Remove trailing AND if it exists
+  if(self.queryString.slice(-4) === 'AND ') {
+      self.queryString = self.queryString.slice(0, -5);
+    }
+
+  self.queryString += ') AND ';
+
 };
 
 
